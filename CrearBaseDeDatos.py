@@ -3,7 +3,7 @@ from dotenv import load_dotenv
 import os
 
 load_dotenv()
-
+ 
 usuario= os.getenv("USUARIO_MONGODB")
 password = os.getenv("PASSWORD_MONGODB")
 cluster= os.getenv("CLUSTER_MONGODB")
