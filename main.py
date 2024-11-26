@@ -63,17 +63,19 @@ def main():
         elif opcion == "14":
             db.eliminar_todas_resenas()    
         elif opcion == "15":
-            db.buscar_orden_ascendente()
+            db.buscar_usuarios_por_nombre()
         elif opcion == "16":
-            db.buscar_orden_descendente()
+            db.buscar_usuarios_por_nombre_descendente()
         elif opcion == "17":
-            db.buscar_limite_10()
+            db.obtener_emails_mas_largos()
         elif opcion == "18":
-            db.filtrar_por_regex()
+            db.filtrar_emails_invalidos()
         elif opcion == "19":
-            db.filtrar_array()
+            db.filtrar_cursos_por_idioma()
         elif opcion == "20":
-            db.insertar_datos()
+            db.filtrar_cursos_por_likes()
+        #elif opcion == "21":
+        #    db.pa_meter()
         else:
             print("Opción inválida. Intenta de nuevo una opción de entre las mostradas.")
 

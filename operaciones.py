@@ -1,6 +1,7 @@
 from conector import ConectorMongoDB
 
 class OperacionesDB:
+    #constructores
     def __init__(self):
         self.cliente = ConectorMongoDB().conectarse()
         self.db = self.cliente["app_cursos_online"]
@@ -35,7 +36,7 @@ class OperacionesDB:
         
         print("Inserción de varios registros")
         
-        # Continuamos pidiendo registros hasta que el usuario decida detenerse
+        # Continuamos pidiendo registros hasta que el usuario quiera
         while True:
             print("\nIntroduce los datos del nuevo registro:")
 
@@ -395,3 +396,146 @@ class OperacionesDB:
                 print("Operación cancelada. No se eliminaron reseñas.")
         else:
             print(f"No se encontraron reseñas para el usuario con email '{email_usuario}'.")
+
+    def buscar_usuarios_por_nombre(self):
+        # Usamos una agregación para normalizar las mayúsculas y minúsculas
+        pipeline = [
+            {
+                "$project": {
+                    "nombre_original": "$nombre",  # Mantenemos el nombre original
+                    "nombre_lower": {"$toLower": "$nombre"}  # Convertimos a minúsculas para ordenar
+                }
+            },
+            {"$sort": {"nombre_lower": 1}},  # Ordenamos por el nombre en minúsculas
+            {"$project": {"nombre": "$nombre_original"}}  # Devolvemos solo el nombre original
+        ]
+
+        # Ejecutamos la agregación
+        usuarios_ordenados = list(self.usuarios.aggregate(pipeline))
+
+        # Mostrar los nombres ordenados
+        if usuarios_ordenados:
+            print("Lista de nombres de usuarios ordenados alfabéticamente (sin importar mayúsculas):")
+            for usuario in usuarios_ordenados:
+                print(f"- {usuario['nombre']}")
+        else:
+            print("No se encontraron usuarios en la base de datos.")
+
+    def buscar_usuarios_por_nombre_descendente(self):
+        # Usamos una agregación para normalizar las mayúsculas y minúsculas
+        pipeline = [
+            {
+                "$project": {
+                    "nombre_original": "$nombre",  # Mantenemos el nombre original
+                    "nombre_lower": {"$toLower": "$nombre"}  # Convertimos a minúsculas para ordenar
+                }
+            },
+            {"$sort": {"nombre_lower": -1}},  # Ordenamos por el nombre en minúsculas, de forma descendente
+            {"$project": {"nombre": "$nombre_original"}}  # Devolvemos solo el nombre original
+        ]
+
+        # Ejecutamos la agregación
+        usuarios_ordenados = list(self.usuarios.aggregate(pipeline))
+
+        # Mostrar los nombres ordenados
+        if usuarios_ordenados:
+            print("Lista de nombres de usuarios ordenados alfabéticamente de forma descendente (sin importar mayúsculas):")
+            for usuario in usuarios_ordenados:
+                print(f"- {usuario['nombre']}")
+        else:
+            print("No se encontraron usuarios en la base de datos.")
+
+    def obtener_emails_mas_largos(self):
+        # Buscar los emails, ordenar por longitud en orden descendente y limitar a 10 registros
+        usuarios_emails = list(self.usuarios.find({}, {"_id": 0, "email": 1}))
+
+        # Ordenamos por la longitud del email y tomamos los 10 más largos
+        emails_ordenados = sorted(usuarios_emails, key=lambda x: len(x['email']), reverse=True)[:10]
+
+        # Mostrar los emails más largos
+        if emails_ordenados:
+            print("Los 10 emails más largos encontrados:")
+            for usuario in emails_ordenados:
+                print(f"- {usuario['email']} (longitud: {len(usuario['email'])})")
+        else:
+            print("No se encontraron usuarios en la base de datos.")
+
+    def filtrar_emails_invalidos(self):
+        # Buscar usuarios cuyos correos NO coinciden con el patrón
+        regex_email_valido = r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
+        usuarios_invalidos = self.usuarios.find({
+            "email": {
+                "$not": {
+                    "$regex": regex_email_valido
+                }
+            }
+        })
+
+        # Mostrar los emails que no tienen un formato correcto
+        if usuarios_invalidos:
+            print("Usuarios con emails inválidos:")
+            for usuario in usuarios_invalidos:
+                print(f"ID Usuario: {usuario['id_usuario']} | Nombre: {usuario['nombre']} | Email: {usuario['email']}")
+        else:
+            print("No se encontraron usuarios con emails inválidos.")
+
+    def filtrar_cursos_por_idioma(self):
+        # Pedir al usuario que ingrese el idioma que desea buscar
+        idioma = input("Introduce el idioma por el que deseas filtrar los cursos (Ejemplo: Inglés, Español): ").strip()
+
+        # Buscar cursos cuyo campo 'idiomas' contenga el idioma proporcionado por el usuario
+        cursos_con_idioma = list(self.cursos.find({
+            "idiomas": idioma
+        }))
+
+        # Mostrar los cursos que contienen el idioma en su array
+        if len(cursos_con_idioma) > 0:
+            print(f"Cursos disponibles en {idioma}:")
+            for curso in cursos_con_idioma:
+                print(f"ID Curso: {curso['id_curso']} | Título: {curso['titulo']} | Idiomas: {', '.join(curso['idiomas'])}")
+        else:
+            print(f"No se encontraron cursos en {idioma}.")
+    def filtrar_cursos_por_likes(self):
+        # Pedir al usuario que ingrese el número mínimo de likes
+        try:
+            likes_minimos = int(input("Introduce el número mínimo de likes que deben tener los cursos: "))
+            
+            # Buscar cursos con cantidad_likes mayor que el valor ingresado
+            cursos_filtrados = list(self.cursos.find({
+                "cantidad_likes": {"$gt": likes_minimos}
+            }))
+            
+            # Mostrar los cursos que cumplen con la condición
+            if len(cursos_filtrados) > 0:
+                print(f"Cursos con más de {likes_minimos} likes:")
+                for curso in cursos_filtrados:
+                    print(f"ID Curso: {curso['id_curso']} | Título: {curso['titulo']} | Likes: {curso['cantidad_likes']}")
+            else:
+                print(f"No se encontraron cursos con más de {likes_minimos} likes.")
+        
+        except ValueError:
+            print("Por favor, ingresa un número válido.")
+
+
+
+    #def pa_meter(self):
+    #            # Nuevos usuarios para insertar
+    #    usuarios_nuevos= [
+    #        {"id_usuario": "4", "nombre": "Juan Pérez", "email": "juanperez98765@gmail.com", "estado": "activo", "presentacion_video": None},
+    #        {"id_usuario": "5", "nombre": "María López", "email": "marialopez9876543210@gmail.com", "estado": "inactivo", "presentacion_video": "https://video.maria.com"},
+    #        {"id_usuario": "6", "nombre": "Carlos Gómez", "email": "carlosgomez12345@gmail.com", "estado": "activo", "presentacion_video": None},
+    #        {"id_usuario": "7", "nombre": "Marta Sánchez", "email": "martasanchezlongemail1234567890@gmail.com", "estado": "activo", "presentacion_video": "https://video.marta.com"},
+    #        {"id_usuario": "8", "nombre": "Luis Fernández", "email": "luisfernandezlong.email.hotmail@gmail.com", "estado": "inactivo", "presentacion_video": None},
+    #        {"id_usuario": "9", "nombre": "Sara Martínez", "email": "sara.martinezextremelylongemail1234567890@gmail.com", "estado": "activo", "presentacion_video": "https://video.sara.com"},
+    #        {"id_usuario": "10", "nombre": "Miguel Torres", "email": "migueltorres9876543210@gmail.com", "estado": "activo", "presentacion_video": None},
+    #        {"id_usuario": "11", "nombre": "Elena Jiménez", "email": "elenajimenez6543210@gmail.com", "estado": "inactivo", "presentacion_video": "https://video.elena.com"},
+    #        {"id_usuario": "12", "nombre": "Tomás Gómez", "email": "tomasgomezlongemail12345@gmail.com", "estado": "activo", "presentacion_video": None},
+    #        {"id_usuario": "13", "nombre": "Lucía Fernández", "email": "luciafernandezlongemail1234@gmail.com", "estado": "activo", "presentacion_video": "https://video.lucia.com"}
+    #    ]
+    #    # Insertar los nuevos usuarios en la colección
+    #    self.usuarios.insert_many(usuarios_nuevos)
+    #    print("Usuarios insertados correctamente.")
+
+
+
+
